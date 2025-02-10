@@ -3,11 +3,169 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Розрахунок деталей з листа</title>
+    <title>Калькулятор ламелей для паркану</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      input,
+      select,
+      button {
+        margin: 5px;
+        padding: 5px;
+      }
+    </style>
   </head>
-
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <h2>Калькулятор ламелей для паркану</h2>
+
+    <!-- Вибір розміру листа металу -->
+    <label>Виберіть розмір листа:</label>
+    <select id="sheetSize">
+      <option value="1.25x2">1,25 × 2 м</option>
+      <option value="1x2">1 × 2 м</option>
+    </select>
+
+    <br />
+
+    <!-- Вибір товщини листа -->
+    <label>Виберіть товщину листа (мм):</label>
+    <select id="metalThickness">
+      <option value="0.4">0,4 мм</option>
+      <option value="0.45">0,45 мм</option>
+      <option value="0.5">0,5 мм</option>
+    </select>
+
+    <br />
+
+    <!-- Вибір висоти ламелі -->
+    <label>Висота ламелі (мм):</label>
+    <select id="lamellaHeight">
+      <option value="50">50 мм</option>
+      <option value="100">100 мм</option>
+      <option value="150">150 мм</option>
+    </select>
+
+    <!-- Вибір довжини ламелі -->
+    <label>Довжина ламелі (мм):</label>
+    <select id="lamellaLength">
+      <option value="2000">2000 мм</option>
+      <option value="2500">2500 мм</option>
+      <option value="3000">3000 мм</option>
+    </select>
+
+    <br />
+
+    <!-- Введення кількості виробів -->
+    <label>Кількість виробів:</label>
+    <input type="number" id="lamellaCount" step="1" min="1" value="10" />
+
+    <br />
+
+    <!-- Введення вартості металу та роботи -->
+    <label>Вартість металу (грн/м²):</label>
+    <input type="number" id="metalCost" step="1" min="0" value="200" />
+
+    <label>Вартість роботи (грн/м²):</label>
+    <input type="number" id="workCost" step="1" min="0" value="40" />
+
+    <label>Додаткові витрати (%):</label>
+    <input type="number" id="extraPercent" step="1" min="0" value="10" />
+
+    <br />
+
+    <!-- Кнопка для запуску розрахунку -->
+    <button onclick="calculate()">Розрахувати</button>
+
+    <h3>Результати:</h3>
+    <p>
+      <strong>Кількість листів металу:</strong> <span id="sheetCount">-</span>
+    </p>
+    <p>
+      <strong>Скільки ламелей виходить з одного листа:</strong>
+      <span id="lamellasPerSheet">-</span>
+    </p>
+    <p><strong>Площа відходів (м²):</strong> <span id="wasteArea">-</span></p>
+    <p>
+      <strong>Собівартість одного виробу (грн):</strong>
+      <span id="unitCost">-</span>
+    </p>
+    <p>
+      <strong>Вартість усіх виробів (грн):</strong>
+      <span id="totalCost">-</span>
+    </p>
+    <p>
+      <strong>Вартість з відходів (грн):</strong> <span id="wasteCost">-</span>
+    </p>
+
+    <script>
+      function calculate() {
+        // Отримуємо вибраний розмір листа металу
+        let sheetSize = document.getElementById("sheetSize").value;
+        let sheetWidth = sheetSize === "1.25x2" ? 1.25 : 1;
+        let sheetLength = 2;
+        let sheetArea = sheetWidth * sheetLength;
+
+        // Отримуємо параметри металу
+        let metalThickness =
+          parseFloat(document.getElementById("metalThickness").value) / 1000;
+        let lamellaHeight =
+          parseFloat(document.getElementById("lamellaHeight").value) / 1000;
+        let lamellaLength =
+          parseFloat(document.getElementById("lamellaLength").value) / 1000;
+        let lamellaCount = parseInt(
+          document.getElementById("lamellaCount").value
+        );
+
+        // Отримуємо вартості
+        let metalCost = parseFloat(document.getElementById("metalCost").value);
+        let workCost = parseFloat(document.getElementById("workCost").value);
+        let extraPercent =
+          parseFloat(document.getElementById("extraPercent").value) / 100;
+
+        // Розрахунок площі матеріалу для однієї ламелі
+        let lamellaWidth = ((30 + 5) * 2) / 1000; // 30 мм товщина + 5 мм загини з двох сторін
+        let smallLamellaWidth = lamellaWidth;
+        let smallLamellaHeight = lamellaHeight;
+
+        let outerArea = (lamellaHeight + lamellaWidth) * lamellaLength;
+        let innerArea =
+          (smallLamellaHeight + smallLamellaWidth) * lamellaLength;
+        let lamellaTotalArea = (outerArea + innerArea) * lamellaCount;
+
+        // Розрахунок кількості ламелей з одного листа
+        let lamellasPerSheet = Math.floor(sheetArea / (outerArea + innerArea));
+
+        // Розрахунок загальної площі металу
+        let totalMetalArea = lamellaTotalArea;
+
+        // Кількість необхідних листів металу
+        let sheetCount = Math.ceil(totalMetalArea / sheetArea);
+        let totalUsedMetal = sheetCount * sheetArea;
+
+        // Розрахунок площі відходів
+        let wasteArea = totalUsedMetal - totalMetalArea;
+
+        // Розрахунок вартості
+        let materialCostTotal = totalMetalArea * metalCost;
+        let workCostTotal = totalMetalArea * workCost;
+        let extraCosts = (materialCostTotal + workCostTotal) * extraPercent;
+        let wasteCost = wasteArea * metalCost;
+
+        // Загальна собівартість
+        let totalCost = materialCostTotal + workCostTotal + extraCosts;
+        let unitCost = totalCost / lamellaCount;
+
+        // Виведення результатів
+        document.getElementById("sheetCount").innerText = sheetCount;
+        document.getElementById("lamellasPerSheet").innerText =
+          lamellasPerSheet;
+        document.getElementById("wasteArea").innerText = wasteArea.toFixed(2);
+        document.getElementById("unitCost").innerText = unitCost.toFixed(2);
+        document.getElementById("totalCost").innerText = totalCost.toFixed(2);
+        document.getElementById("wasteCost").innerText = wasteCost.toFixed(2);
+      }
+    </script>
   </body>
 </html>
